@@ -16,7 +16,9 @@ test_that("the API key travels in the X-API-Key header, not the query string", {
   # real key still reaches the wire after redaction. It needs httpuv, which is
   # only in Suggests, so skip rather than make a test dependency load-bearing.
   skip_if_not_installed("httpuv")
-  wire <- httr2::req_dry_run(got$request, quiet = TRUE)
+  # redact_headers = FALSE is required: req_dry_run() masks redacted headers by
+  # default, which is itself evidence the redaction is working.
+  wire <- httr2::req_dry_run(got$request, quiet = TRUE, redact_headers = FALSE)
   expect_true("test-key-123" %in% unlist(wire$headers))
 
   # A key leaked into the URL would end up in server logs and browser history.
