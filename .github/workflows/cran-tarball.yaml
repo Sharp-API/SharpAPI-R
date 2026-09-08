@@ -1,0 +1,69 @@
+# Builds the exact tarball that gets uploaded to CRAN, and hands it back as a
+# downloadable artifact.
+#
+# Why this exists: R is not installed on the dev box or on nova (by design), so
+# `R CMD build` — the one step between a green check and an actual submission —
+# had nowhere to run. That made the final item on #1 read like "do some R work"
+# when it is really "download one file and fill in a form".
+#
+# Run it from the Actions tab (workflow_dispatch), download the `cran-tarball`
+# artifact, then submit at https://cran.r-project.org/submit.html. CRAN emails a
+# confirmation link to the maintainer address in DESCRIPTION (hello@sharpapi.io);
+# that click is a human step and cannot be automated away.
+name: Build CRAN tarball
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, any::roxygen2
+          needs: check
+
+      # Guard against submitting a tarball whose docs do not match the source.
+      # R CMD build does NOT run roxygen, which is exactly how this package
+      # previously ended up with no man/ in the tarball while CI was green.
+      - name: Check committed documentation is current
+        run: |
+          roxygen2::roxygenise()
+          if (length(system("git status --porcelain", intern = TRUE)) > 0) {
+            cat(system("git status --porcelain", intern = TRUE), sep = "\n")
+            stop("man/ is stale: re-run roxygenise() and commit before building for CRAN")
+          }
+        shell: Rscript {0}
+
+      - name: R CMD build
+        run: R CMD build .
+
+      # The same check CRAN runs. Building a tarball that fails this wastes a
+      # submission slot and CRAN reviewers' time, so fail here instead.
+      - name: R CMD check --as-cran on the built tarball
+        run: |
+          TARBALL=$(ls -1 *.tar.gz | head -n1)
+          echo "checking $TARBALL"
+          R CMD check --no-manual --as-cran "$TARBALL"
+
+      - name: Show the check log
+        if: always()
+        run: cat *.Rcheck/00check.log || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cran-tarball
+          path: "*.tar.gz"
+          if-no-files-found: error
+          retention-days: 30
