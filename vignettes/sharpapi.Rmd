@@ -124,14 +124,14 @@ empty frame, so wrap these in `try()` if you are probing what a key can reach.
 
 If you want to work through the data shapes before signing up, sample
 snapshots (MLB and 2026 World Cup) are published as CSVs at
-<https://github.com/Sharp-API/sports-odds-sample-data>. They have the same
+<https://github.com/Sharp-API/SharpAPI-Sample-Data>. They have the same
 column names the API returns, so code written against them transfers
 unchanged:
 
 ```{r, eval = FALSE}
 url <- paste0(
   "https://raw.githubusercontent.com/Sharp-API/",
-  "sports-odds-sample-data/main/data/mlb_odds_snapshot.csv"
+  "SharpAPI-Sample-Data/main/data/mlb_odds_snapshot.csv"
 )
 odds <- read.csv(url)
 ```

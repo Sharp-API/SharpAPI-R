@@ -20,6 +20,6 @@ Suggests:
     withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-URL: https://sharpapi.io, https://github.com/Sharp-API/sharpapi-r
-BugReports: https://github.com/Sharp-API/sharpapi-r/issues
+URL: https://sharpapi.io, https://github.com/Sharp-API/SharpAPI-R
+BugReports: https://github.com/Sharp-API/SharpAPI-R/issues
 Config/roxygen2/version: 8.1.0
