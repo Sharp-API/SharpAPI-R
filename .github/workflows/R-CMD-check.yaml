@@ -1,8 +1,4 @@
-# R CMD check --as-cran, which had no way to run before this existed: R is not
-# installed on the dev box and the repo had no .github/ at all, so issue #1's
-# step 3 ("run R CMD check --as-cran on r-devel") was unactionable. Running it
-# here rather than installing R locally also keeps it off a box that sits near
-# its disk ceiling.
+# Run R CMD check --as-cran across supported R versions for CRAN readiness.
 #
 # r-devel is included deliberately: CRAN checks submissions against it, and it
 # is where a NOTE that blocks acceptance usually appears first.
