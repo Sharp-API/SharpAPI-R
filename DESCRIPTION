@@ -9,7 +9,6 @@ Description: Access real-time sports betting odds, no-vig fair odds, expected
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Imports:
     httr2 (>= 1.0.0),
     jsonlite
@@ -22,3 +21,4 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://sharpapi.io, https://github.com/Sharp-API/sharpapi-r
 BugReports: https://github.com/Sharp-API/sharpapi-r/issues
+Config/roxygen2/version: 8.1.0
