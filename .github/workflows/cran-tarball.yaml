@@ -1,11 +1,6 @@
 # Builds the exact tarball that gets uploaded to CRAN, and hands it back as a
 # downloadable artifact.
 #
-# Why this exists: R is not installed on the dev box or on nova (by design), so
-# `R CMD build` — the one step between a green check and an actual submission —
-# had nowhere to run. That made the final item on #1 read like "do some R work"
-# when it is really "download one file and fill in a form".
-#
 # Run it from the Actions tab (workflow_dispatch), download the `cran-tarball`
 # artifact, then submit at https://cran.r-project.org/submit.html. CRAN emails a
 # confirmation link to the maintainer address in DESCRIPTION (hello@sharpapi.io);
@@ -49,8 +44,7 @@ jobs:
       - name: R CMD build
         run: R CMD build .
 
-      # The same check CRAN runs. Building a tarball that fails this wastes a
-      # submission slot and CRAN reviewers' time, so fail here instead.
+      # Check the built tarball against CRAN requirements before submission.
       - name: R CMD check --as-cran on the built tarball
         run: |
           TARBALL=$(ls -1 *.tar.gz | head -n1)

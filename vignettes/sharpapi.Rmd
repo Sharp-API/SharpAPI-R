@@ -32,9 +32,9 @@ normally use — `dplyr`, `data.table`, base subsetting.
 ## Setting your key
 
 Every call needs an API key. A free tier is available at
-<https://sharpapi.io>. The package reads it from the `SHARPAPI_KEY`
-environment variable and never takes it as an argument, so a key cannot end up
-in a saved script by accident:
+<https://sharpapi.io>. The package reads credentials from the `SHARPAPI_KEY`
+environment variable rather than function arguments. Avoid storing real keys
+in source files:
 
 ```{r, eval = FALSE}
 Sys.setenv(SHARPAPI_KEY = "your-key-here")
@@ -124,9 +124,9 @@ empty frame, so wrap these in `try()` if you are probing what a key can reach.
 
 If you want to work through the data shapes before signing up, sample
 snapshots (MLB and 2026 World Cup) are published as CSVs at
-<https://github.com/Sharp-API/SharpAPI-Sample-Data>. They have the same
-column names the API returns, so code written against them transfers
-unchanged:
+<https://github.com/Sharp-API/SharpAPI-Sample-Data>. The snapshots use SharpAPI odds
+field names and provide offline examples for exploring the data. Live responses
+may include additional fields or nested objects:
 
 ```{r, eval = FALSE}
 url <- paste0(
@@ -138,8 +138,8 @@ odds <- read.csv(url)
 
 ## Errors
 
-The package does not swallow HTTP errors — `httr2` raises them, so a failed
-call stops with the status and the API's message. The ones worth recognising:
+HTTP errors are raised by `httr2` with the response status and API message.
+Common status codes include:
 
 | Status | Meaning |
 |---|---|
