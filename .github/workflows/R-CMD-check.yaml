@@ -14,7 +14,7 @@ name: R-CMD-check
 
 on:
   push:
-    branches: [main]
+    branches: [main, "mergify/merge-queue/**"]
   pull_request:
   workflow_dispatch:
 
