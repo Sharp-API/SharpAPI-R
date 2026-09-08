@@ -11,13 +11,52 @@ sharpapi_key <- function() {
 sharpapi_get <- function(path, ...) {
   params <- list(...)
   req <- httr2::request(paste0(BASE_URL, path))
-  req <- httr2::req_headers(req, `X-API-Key` = sharpapi_key())
+  # `.redact` keeps the key out of a printed request AND out of the request
+  # object httr2 attaches to its error conditions. The realistic leak is not an
+  # attacker: it is a user hitting an error and sharing `dput(err)` or
+  # `err$request` in a bug report.
+  req <- httr2::req_headers(req, `X-API-Key` = sharpapi_key(), .redact = "X-API-Key")
   req <- httr2::req_user_agent(req, "sharpapi-r (https://github.com/Sharp-API/sharpapi-r)")
+  # Do not follow redirects. curl forwards custom headers to the redirect target
+  # (it strips `Authorization` across hosts, but not an arbitrary header such as
+  # `X-API-Key`), so one misconfigured redirect would hand the user's key to
+  # whoever operates the destination. Every endpoint here is a fixed path on one
+  # HTTPS origin, so there is no legitimate redirect to follow.
+  req <- httr2::req_options(req, followlocation = FALSE)
   if (length(params) > 0) {
     req <- do.call(httr2::req_url_query, c(list(req), params))
   }
-  resp <- httr2::req_perform(req)
-  jsonlite::fromJSON(httr2::resp_body_string(resp))
+  resp <- tryCatch(
+    httr2::req_perform(req),
+    error = function(cnd) {
+      # Re-raise WITHOUT chaining the original condition. httr2 attaches the
+      # request to HTTP and transport errors, and a chained condition survives
+      # `try()`, `saveRDS()` and `dput()`. Redaction covers printing; dropping
+      # the chain covers serialisation.
+      status <- tryCatch(httr2::resp_status(cnd$resp), error = function(e) NA_integer_)
+      detail <- tryCatch(httr2::resp_body_string(cnd$resp), error = function(e) "")
+      msg <- if (!is.na(status)) {
+        paste0("SharpAPI request failed (HTTP ", status, ").")
+      } else {
+        "SharpAPI request failed: could not reach the API."
+      }
+      if (nzchar(detail)) {
+        msg <- paste0(msg, " Response: ", substr(detail, 1, 200))
+      }
+      stop(msg, call. = FALSE)
+    }
+  )
+  # `fromJSON()` treats a bare URL or an existing file path as a source to fetch
+  # or read, so a response body that is not JSON could trigger a further request
+  # or a local file read. `parse_json()` only ever parses the literal string.
+  # The three `simplify*` arguments reproduce `fromJSON()`'s default shape, which
+  # the exported functions rely on when they call `as.data.frame()`.
+  jsonlite::parse_json(
+    httr2::resp_body_string(resp),
+    simplifyVector = TRUE,
+    simplifyDataFrame = TRUE,
+    simplifyMatrix = TRUE
+  )
 }
 
 #' List sports with live event counts
