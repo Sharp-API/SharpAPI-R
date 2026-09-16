@@ -48,6 +48,39 @@ jobs:
           extra-packages: any::rcmdcheck, any::roxygen2
           needs: check
 
+      # CRAN rejected 0.1.0 because every example sat inside \donttest{}, so the
+      # incoming check ran none of them. Each Rd file must keep a small toy
+      # example ABOVE the first \donttest{}/\dontrun{} wrapper. Checked over
+      # every man/*.Rd, not just the ones a given PR touches.
+      - name: Check every Rd file has an example CRAN can run
+        if: matrix.config.r == 'release'
+        run: |
+          set -euo pipefail
+          status=0
+          for rd in man/*.Rd; do
+            awk '
+              /^\\examples\{$/ { inex = 1; runnable = 0; seen = 1; next }
+              inex && /^[ \t]*\\(donttest|dontrun)\{/ { inex = 0; next }
+              inex {
+                t = $0; gsub(/^[ \t]+|[ \t]+$/, "", t)
+                if (t == "" || t == "}" || substr(t, 1, 1) == "#") next
+                runnable = 1; inex = 0
+              }
+              END {
+                if (!seen) {
+                  printf "::error::%s has no \\examples{} block\n", FILENAME
+                  exit 1
+                }
+                if (!runnable) {
+                  printf "::error::%s starts its examples with \\donttest{}/\\dontrun{}, so CRAN never runs them. Add a small toy example above the wrapper.\n", FILENAME
+                  exit 1
+                }
+              }
+            ' "$rd" || status=1
+          done
+          exit $status
+        shell: bash
+
       # man/, NAMESPACE and DESCRIPTION's roxygen2 version field are roxygen
       # output and are all committed. Re-run roxygenise and fail if anything
       # changed: that means the committed docs are stale relative to the
@@ -56,6 +89,7 @@ jobs:
       - name: Check committed documentation is current
         if: matrix.config.r == 'release'
         run: |
+          set -euo pipefail
           Rscript -e 'roxygen2::roxygenise()'
           if [ -n "$(git status --porcelain)" ]; then
             echo "::error::Committed documentation is stale. Run roxygen2::roxygenise() locally and commit the result."
