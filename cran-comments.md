@@ -43,3 +43,7 @@ check session. The toy block is guarded by `requireNamespace("withr")`;
 
 The CI job is configured with `error-on: "note"`, so the package cannot be
 merged with an outstanding NOTE on any of the three R versions above.
+
+CRAN's own incoming checks will additionally report the usual "New
+submission" NOTE: 0.1.0 was not accepted, so this is still a first
+submission.
