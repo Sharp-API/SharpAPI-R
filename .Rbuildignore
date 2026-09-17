@@ -1,6 +1,8 @@
+^cran-comments\.md$
 ^LICENSE\.md$
 ^\.github$
 ^README\.Rmd$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.mergify\.yml$
+^\.local$

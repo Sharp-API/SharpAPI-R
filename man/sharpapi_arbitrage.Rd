@@ -20,6 +20,25 @@ returning an empty frame.
 Requires a Hobby tier key or higher.
 }
 \examples{
+# Toy example. A canned response stands in for the API, so this block runs
+# offline -- no key, no network -- and returns the same shape a live call does.
+if (requireNamespace("withr", quietly = TRUE)) {
+  json <- '{"data": [
+    {"event_id": "evt-1", "sport": "baseball",
+     "market_type": "moneyline", "profit_percent": 1.8}
+  ]}'
+  mock <- function(req) {
+    httr2::response(
+      status_code = 200L,
+      headers = list(`Content-Type` = "application/json"),
+      body = charToRaw(json)
+    )
+  }
+  withr::with_envvar(c(SHARPAPI_KEY = "toy-key"), {
+    httr2::with_mocked_responses(mock, sharpapi_arbitrage(sport = "baseball"))
+  })
+}
+
 \donttest{
 if (nzchar(Sys.getenv("SHARPAPI_KEY"))) {
   arb <- sharpapi_arbitrage(sport = "baseball")

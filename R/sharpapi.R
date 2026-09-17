@@ -64,6 +64,25 @@ sharpapi_get <- function(path, ...) {
 #' @return A data frame with one row per sport. Columns include `id`,
 #'   `name`, `numerical_id`, `event_count` and `live_count`.
 #' @examples
+#' # Toy example. A canned response stands in for the API, so this block runs
+#' # offline -- no key, no network -- and returns the same shape a live call does.
+#' if (requireNamespace("withr", quietly = TRUE)) {
+#'   json <- '{"data": [
+#'     {"id": "baseball", "name": "Baseball", "numerical_id": 3,
+#'      "event_count": 51, "live_count": 4}
+#'   ]}'
+#'   mock <- function(req) {
+#'     httr2::response(
+#'       status_code = 200L,
+#'       headers = list(`Content-Type` = "application/json"),
+#'       body = charToRaw(json)
+#'     )
+#'   }
+#'   withr::with_envvar(c(SHARPAPI_KEY = "toy-key"), {
+#'     httr2::with_mocked_responses(mock, sharpapi_sports())
+#'   })
+#' }
+#'
 #' \donttest{
 #' # Requires SHARPAPI_KEY to be set; get a free key at https://sharpapi.io
 #' if (nzchar(Sys.getenv("SHARPAPI_KEY"))) {
@@ -85,6 +104,27 @@ sharpapi_sports <- function() {
 #'   `event_id`, `sportsbook`, `market_type`, `selection`, `odds_american`,
 #'   `odds_decimal` and `odds_probability`.
 #' @examples
+#' # Toy example. A canned response stands in for the API, so this block runs
+#' # offline -- no key, no network -- and returns the same shape a live call does.
+#' if (requireNamespace("withr", quietly = TRUE)) {
+#'   json <- '{"data": [
+#'     {"event_id": "evt-1", "sportsbook": "pinnacle",
+#'      "market_type": "moneyline", "selection": "Yankees",
+#'      "odds_american": -145, "odds_decimal": 1.69,
+#'      "odds_probability": 0.5918}
+#'   ]}'
+#'   mock <- function(req) {
+#'     httr2::response(
+#'       status_code = 200L,
+#'       headers = list(`Content-Type` = "application/json"),
+#'       body = charToRaw(json)
+#'     )
+#'   }
+#'   withr::with_envvar(c(SHARPAPI_KEY = "toy-key"), {
+#'     httr2::with_mocked_responses(mock, sharpapi_odds(sport = "baseball", limit = 5))
+#'   })
+#' }
+#'
 #' \donttest{
 #' if (nzchar(Sys.getenv("SHARPAPI_KEY"))) {
 #'   odds <- sharpapi_odds(sport = "baseball", limit = 5)
@@ -106,6 +146,26 @@ sharpapi_odds <- function(...) {
 #'   A key below the Pro tier raises an HTTP error rather than returning an
 #'   empty frame.
 #' @examples
+#' # Toy example. A canned response stands in for the API, so this block runs
+#' # offline -- no key, no network -- and returns the same shape a live call does.
+#' if (requireNamespace("withr", quietly = TRUE)) {
+#'   json <- '{"data": [
+#'     {"event_id": "evt-1", "sportsbook": "draftkings",
+#'      "market_type": "moneyline", "selection": "Yankees",
+#'      "ev_percentage": 3.42}
+#'   ]}'
+#'   mock <- function(req) {
+#'     httr2::response(
+#'       status_code = 200L,
+#'       headers = list(`Content-Type` = "application/json"),
+#'       body = charToRaw(json)
+#'     )
+#'   }
+#'   withr::with_envvar(c(SHARPAPI_KEY = "toy-key"), {
+#'     httr2::with_mocked_responses(mock, sharpapi_ev(sport = "baseball"))
+#'   })
+#' }
+#'
 #' \donttest{
 #' if (nzchar(Sys.getenv("SHARPAPI_KEY"))) {
 #'   ev <- sharpapi_ev(sport = "baseball")
@@ -128,6 +188,25 @@ sharpapi_ev <- function(...) {
 #'   fields. A key below the Hobby tier raises an HTTP error rather than
 #'   returning an empty frame.
 #' @examples
+#' # Toy example. A canned response stands in for the API, so this block runs
+#' # offline -- no key, no network -- and returns the same shape a live call does.
+#' if (requireNamespace("withr", quietly = TRUE)) {
+#'   json <- '{"data": [
+#'     {"event_id": "evt-1", "sport": "baseball",
+#'      "market_type": "moneyline", "profit_percent": 1.8}
+#'   ]}'
+#'   mock <- function(req) {
+#'     httr2::response(
+#'       status_code = 200L,
+#'       headers = list(`Content-Type` = "application/json"),
+#'       body = charToRaw(json)
+#'     )
+#'   }
+#'   withr::with_envvar(c(SHARPAPI_KEY = "toy-key"), {
+#'     httr2::with_mocked_responses(mock, sharpapi_arbitrage(sport = "baseball"))
+#'   })
+#' }
+#'
 #' \donttest{
 #' if (nzchar(Sys.getenv("SHARPAPI_KEY"))) {
 #'   arb <- sharpapi_arbitrage(sport = "baseball")
