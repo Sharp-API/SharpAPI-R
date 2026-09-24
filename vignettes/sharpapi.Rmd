@@ -1,0 +1,148 @@
+---
+title: "Getting started with sharpapi"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with sharpapi}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+# Every chunk that would call the API is eval = FALSE: building this vignette
+# must not require a key or a network connection.
+```
+
+## What this package does
+
+`sharpapi` wraps the [SharpAPI](https://sharpapi.io) REST API, which normalizes
+real-time sports betting odds from 45+ sportsbooks into one schema. Four
+functions cover the common cases:
+
+| Function | Endpoint | Minimum tier |
+|---|---|---|
+| `sharpapi_sports()` | `/sports` | any |
+| `sharpapi_odds()` | `/odds` | any |
+| `sharpapi_arbitrage()` | `/opportunities/arbitrage` | Hobby |
+| `sharpapi_ev()` | `/opportunities/ev` | Pro |
+
+Each returns a plain data frame, so the result goes straight into whatever you
+normally use — `dplyr`, `data.table`, base subsetting.
+
+## Setting your key
+
+Every call needs an API key. A free tier is available at
+<https://sharpapi.io>. The package reads credentials from the `SHARPAPI_KEY`
+environment variable rather than function arguments. Avoid storing real keys
+in source files:
+
+```{r, eval = FALSE}
+Sys.setenv(SHARPAPI_KEY = "your-key-here")
+```
+
+For anything beyond a one-off session, put it in `~/.Renviron` instead
+(`usethis::edit_r_environ()` opens the file) so it is set for every session and
+stays out of your project directory:
+
+```
+SHARPAPI_KEY=your-key-here
+```
+
+If the variable is unset, every function stops with a message telling you so
+rather than making an unauthenticated request.
+
+## Which sports are live right now
+
+```{r, eval = FALSE}
+library(sharpapi)
+
+sports <- sharpapi_sports()
+head(sports[order(-sports$live_count), c("id", "name", "event_count", "live_count")])
+```
+
+```
+#>          id       name event_count live_count
+#> 1    soccer     Soccer         812         37
+#> 2  baseball   Baseball          51          4
+```
+
+## Fetching odds
+
+`sharpapi_odds()` passes any named argument through to the API as a filter.
+Useful ones are `sport`, `league`, `sportsbook`, `market_type`, `is_live` and
+`limit`:
+
+```{r, eval = FALSE}
+odds <- sharpapi_odds(sport = "baseball", market_type = "moneyline", limit = 500)
+
+str(odds[1, c("sportsbook", "home_team", "away_team", "selection", "odds_american")])
+```
+
+```
+#> 'data.frame': 1 obs. of  5 variables:
+#>  $ sportsbook   : chr "pinnacle"
+#>  $ home_team    : chr "Yankees"
+#>  $ away_team    : chr "Red Sox"
+#>  $ selection    : chr "Yankees"
+#>  $ odds_american: int -145
+```
+
+Because the result is a data frame, comparing one market across books is
+ordinary R:
+
+```{r, eval = FALSE}
+best <- odds[odds$event_id == odds$event_id[1] & odds$selection == "Yankees", ]
+best[order(-best$odds_decimal), c("sportsbook", "odds_american", "odds_decimal")]
+```
+
+## Finding opportunities
+
+`sharpapi_arbitrage()` (Hobby tier and above) returns cross-book arbitrage. The
+individual sides live in a nested `legs` column rather than as top-level
+fields:
+
+```{r, eval = FALSE}
+arb <- sharpapi_arbitrage(sport = "baseball")
+arb[, c("event_id", "market_type", "profit_percent")]
+
+# the two sides of the first opportunity
+arb$legs[[1]]
+```
+
+`sharpapi_ev()` (Pro tier and above) returns positive expected value bets,
+priced against the sharp reference books:
+
+```{r, eval = FALSE}
+ev <- sharpapi_ev(sport = "baseball")
+head(ev[order(-ev$ev_percentage), c("sportsbook", "selection", "ev_percentage")])
+```
+
+A key below the required tier raises an HTTP error rather than returning an
+empty frame, so wrap these in `try()` if you are probing what a key can reach.
+
+## Trying it without a key
+
+If you want to work through the data shapes before signing up, sample
+snapshots (MLB and 2026 World Cup) are published as CSVs at
+<https://github.com/Sharp-API/SharpAPI-Sample-Data>. The snapshots use SharpAPI odds
+field names and provide offline examples for exploring the data. Live responses
+may include additional fields or nested objects:
+
+```{r, eval = FALSE}
+url <- paste0(
+  "https://raw.githubusercontent.com/Sharp-API/",
+  "SharpAPI-Sample-Data/main/data/mlb_odds_snapshot.csv"
+)
+odds <- read.csv(url)
+```
+
+## Errors
+
+HTTP errors are raised by `httr2` with the response status and API message.
+Common status codes include:
+
+| Status | Meaning |
+|---|---|
+| 401 | key missing or invalid |
+| 403 | key is valid but below the tier this endpoint requires |
+| 429 | rate limit for your tier exceeded |

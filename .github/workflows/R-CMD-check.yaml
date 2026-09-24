@@ -1,0 +1,109 @@
+# Run R CMD check --as-cran across supported R versions for CRAN readiness.
+#
+# r-devel is included deliberately: CRAN checks submissions against it, and it
+# is where a NOTE that blocks acceptance usually appears first.
+#
+# man/ is committed (R CMD build does not run roxygen, so a tarball built from
+# a repo without man/ has no documentation at all and CRAN rejects it). The
+# roxygenise step below is therefore a freshness CHECK, not a generator.
+name: R-CMD-check
+
+on:
+  push:
+    branches: [main, "mergify/merge-queue/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  R-CMD-check:
+    runs-on: ${{ matrix.config.os }}
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { os: ubuntu-latest, r: 'devel', http-user-agent: 'release' }
+          - { os: ubuntu-latest, r: 'release' }
+          - { os: ubuntu-latest, r: 'oldrel-1' }
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: r-lib/actions/setup-r@465b7d8e732ca3921382b1674c59bada9cbf3399 # v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config['http-user-agent'] }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@465b7d8e732ca3921382b1674c59bada9cbf3399 # v2
+        with:
+          extra-packages: any::rcmdcheck, any::roxygen2
+          needs: check
+
+      # CRAN rejected 0.1.0 because every example sat inside \donttest{}, so the
+      # incoming check ran none of them. Each Rd file must keep a small toy
+      # example ABOVE the first \donttest{}/\dontrun{} wrapper. Checked over
+      # every man/*.Rd, not just the ones a given PR touches.
+      - name: Check every Rd file has an example CRAN can run
+        if: matrix.config.r == 'release'
+        run: |
+          set -euo pipefail
+          status=0
+          for rd in man/*.Rd; do
+            awk '
+              /^\\examples\{$/ { inex = 1; runnable = 0; seen = 1; next }
+              inex && /^[ \t]*\\(donttest|dontrun)\{/ { inex = 0; next }
+              inex {
+                t = $0; gsub(/^[ \t]+|[ \t]+$/, "", t)
+                if (t == "" || t == "}" || substr(t, 1, 1) == "#") next
+                runnable = 1; inex = 0
+              }
+              END {
+                if (!seen) {
+                  printf "::error::%s has no \\examples{} block\n", FILENAME
+                  exit 1
+                }
+                if (!runnable) {
+                  printf "::error::%s starts its examples with \\donttest{}/\\dontrun{}, so CRAN never runs them. Add a small toy example above the wrapper.\n", FILENAME
+                  exit 1
+                }
+              }
+            ' "$rd" || status=1
+          done
+          exit $status
+        shell: bash
+
+      # man/, NAMESPACE and DESCRIPTION's roxygen2 version field are roxygen
+      # output and are all committed. Re-run roxygenise and fail if anything
+      # changed: that means the committed docs are stale relative to the
+      # roxygen comments in R/. Only on the release leg -- an older/newer
+      # roxygen2 on another leg would produce spurious diffs.
+      - name: Check committed documentation is current
+        if: matrix.config.r == 'release'
+        run: |
+          set -euo pipefail
+          Rscript -e 'roxygen2::roxygenise()'
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Committed documentation is stale. Run roxygen2::roxygenise() locally and commit the result."
+            echo "--- git status --porcelain ---"
+            git status --porcelain
+            echo "--- git diff ---"
+            git --no-pager diff
+            exit 1
+          fi
+          echo "Committed documentation is up to date."
+        shell: bash
+
+      - uses: r-lib/actions/check-r-package@465b7d8e732ca3921382b1674c59bada9cbf3399 # v2
+        with:
+          args: 'c("--no-manual", "--as-cran")'
+          error-on: '"note"'
+          upload-snapshots: true

@@ -1,0 +1,26 @@
+Package: sharpapi
+Title: Client for the 'SharpAPI' Real-Time Sports Betting Odds API
+Version: 0.1.1
+Authors@R: person("SharpAPI", email = "hello@sharpapi.io",
+    role = c("aut", "cre", "cph"))
+Description: Access real-time sports betting odds, no-vig fair odds, expected
+    value (+EV) and arbitrage opportunities from the 'SharpAPI' REST API
+    <https://sharpapi.io>. Covers 45+ sportsbooks normalized into one schema.
+    Requires a 'SharpAPI' key; a free tier is available.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+    httr2 (>= 1.2.0),
+    jsonlite
+Suggests:
+    httpuv,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    withr
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+URL: https://sharpapi.io, https://github.com/Sharp-API/SharpAPI-R
+BugReports: https://github.com/Sharp-API/SharpAPI-R/issues
+Config/roxygen2/version: 8.1.0
