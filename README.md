@@ -4,7 +4,7 @@
 [![r-universe](https://sharp-api.r-universe.dev/badges/sharpapi)](https://sharp-api.r-universe.dev/sharpapi)
 [![docs](https://img.shields.io/badge/docs-docs.sharpapi.io-06b6d4)](https://docs.sharpapi.io)
 
-R client for [SharpAPI](https://sharpapi.io), the real-time sports betting odds API: live odds from 45+ sportsbooks in one schema, no-vig fair odds, +EV and arbitrage detection.
+R client for [SharpAPI](https://sharpapi.io), the real-time sports betting odds API: live odds from the major US sportsbooks, plus sharp books, exchanges and prediction markets, normalized into one schema, with no-vig fair odds, +EV and arbitrage detection.
 
 ## Install
 

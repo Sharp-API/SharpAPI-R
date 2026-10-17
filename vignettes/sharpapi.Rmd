@@ -16,8 +16,9 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ## What this package does
 
 `sharpapi` wraps the [SharpAPI](https://sharpapi.io) REST API, which normalizes
-real-time sports betting odds from 45+ sportsbooks into one schema. Four
-functions cover the common cases:
+real-time sports betting odds from the major US sportsbooks, plus sharp books,
+exchanges and prediction markets, into one schema. Four functions cover the
+common cases:
 
 | Function | Endpoint | Minimum tier |
 |---|---|---|
