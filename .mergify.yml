@@ -1,0 +1,40 @@
+# CI validates, a reviewer signs off, Mergify merges.
+#
+# Two positive gates, both required: the automated review verdict check AND a
+# label that only a maintainer applies after reading the change. The brake
+# labels below stop the queue while any one of them is present. Required
+# status checks are listed below.
+merge_queue:
+  mode: serial
+  max_parallel_checks: 1
+queue_rules:
+- name: reviewed
+  batch_size: 1
+  merge_method: squash
+  update_method: merge
+  branch_protection_injection_mode: queue
+  queue_conditions:
+  - base=main
+  - -draft
+  - check-success=@sharp-resolver/sa-verdict
+  - label=sa-approved
+  - -label=do-not-merge
+  - -label=sa-needs-attention
+  - -label=sa-signoff:hold
+  - -label=sa-gate:hold
+  - check-success=ubuntu-latest (devel)
+  - check-success=ubuntu-latest (release)
+  - check-success=ubuntu-latest (oldrel-1)
+pull_request_rules:
+- name: Queue approved changes
+  conditions:
+  - base=main
+  - -draft
+  - check-success=@sharp-resolver/sa-verdict
+  - label=sa-approved
+  - -label=do-not-merge
+  - -label=sa-needs-attention
+  - -label=sa-signoff:hold
+  - -label=sa-gate:hold
+  actions:
+    queue: {}
